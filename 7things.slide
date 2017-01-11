@@ -1,0 +1,554 @@
+7 things which you should care about before release your code on production
+
+Mateusz Dymiński
+Siili Solutions
+
+[[github.com/mateuszdyminski/7things][github.com/mateuszdyminski/7things]]
+@m_dyminski
+
+* Agenda
+
+- Versioning
+- Profiling
+- Health checks
+- Logs
+- Performance
+- Monitoring and alarming
+- Release process
+
+* 1. Versioning
+
+* Version Builds
+
+* Version Builds
+
+Add information about the build at build time.
+
+- Version
+- Last commit
+- Build time
+- Env vars
+
+* Version Builds - how to
+
+Get information about the build and last commit from git.
+
+    VERSION=$(git describe --always)
+    LAST_COMMIT_USER="$(tr -d '[:space:]' <<<"$(git log -1 --format=%cn)<$(git log -1 --format=%ce)>")"
+    LAST_COMMIT_HASH=$(git log -1 --format=%H)
+    LAST_COMMIT_TIME=$(git log -1 --format=%cd --date=format:'%Y-%m-%d_%H:%M:%S')
+
+Pass information to our application during the build process.
+
+    go build -ldflags "-X main.appVersion=$VERSION
+                       -X main.lastCommitTime=$LAST_COMMIT_TIME
+                       -X main.lastCommitHash=$LAST_COMMIT_HASH
+                       -X main.lastCommitUser=$LAST_COMMIT_USER
+                       -X main.buildTime=$(date -u +%Y-%m-%d_%H:%M:%S)" main.go
+
+* Version Builds - how to
+
+.code versioning/builds/main.go
+
+* Version artifacts
+
+* Version artifacts
+
+Always store build results.
+
+- Nexus, ftp or something
+- Github, Bitbucket, Codeplex
+- Dockerhub, private Docker registry
+
+* Version artifacts - github - how to
+
+https://github.com/aktau/github-release
+
+    # upload a file, for example the OSX/AMD64 binary of my gofinance app
+    $ github-release upload \
+        --user aktau \
+        --repo gofinance \
+        --tag v0.1.0 \
+        --name "gofinance-osx-amd64" \
+        --file bin/darwin/amd64/gofinance
+
+* Version API
+
+* Version API
+
+Two common approach:
+
+- http://company.com/api/v3/users
+    GET v3.0/users HTTP/1.1
+    Accept: application/xml
+
+or:
+
+- http://company.com/api/users
+    GET /users HTTP/1.1
+    Accept: application/vnd.company.myapp.customer-v3+json
+
+* Version API - subrouters - how to
+
+- http://company.com/api/v3/users
+    GET v3.0/users HTTP/1.1
+    Accept: application/xml
+
+Code:
+
+.code versioning/api/subrouters.go /^func main/,/^}/
+
+* Version API - subrouters - how to
+
+Handlers:
+
+.code versioning/api/subrouters.go /^func testV1Handler/,/^}/
+
+.code versioning/api/subrouters.go /^func testV2Handler/,/^}/
+
+
+Test:
+
+    curl http://localhost:8080/api/v1/test
+
+    curl http://localhost:8080/api/v2/test
+
+* Version API - headers - how to
+
+- http://company.com/api/users
+    GET /users HTTP/1.1
+    Accept: application/vnd.company.myapp.customer-v3+json
+
+Code:
+
+.code versioning/api/headers.go /^func main/,/^}/
+
+.code versioning/api/headers.go /^func Ver/,/^}/
+
+* Version API - headers - how to
+
+.code versioning/api/headers.go /^func AcceptedVersion/,/^}/
+
+* Version API - headers - how to
+
+Handlers:
+
+.code versioning/api/headers.go /^func testHandler/,/^}/
+
+Test:
+
+    curl localhost:8081/api/test
+
+    curl --header "Accept: application/vnd.testapp.v2" localhost:8081/api/test
+
+* Version Static files
+
+* Version Static files
+
+Reduce the risk that client gets cached-old files.
+
+- /statics/$REVISION/app.js
+- /statics/app.js?v=$REVISION
+- /statics/app.$REVISION.js
+
+* Version Static files - how to
+
+Code:
+
+.code versioning/files/statics.go
+
+Test:
+
+    curl http://localhost:8082/s/1.0/index.html
+
+    curl http://localhost:8082/s/index.html
+
+* Version DB schema
+
+* Version DB schema
+
+- Automatic - one command to run all migrations
+- Reversible - rollbacks
+
+Options:
+- Flyway
+- Liquibase
+- Custom solution
+
+* Version DB schema - go tools
+
+Options:
+- https://github.com/mattes/migrate
+- https://github.com/tanel/dbmigrate
+- https://github.com/BurntSushi/migration
+- https://github.com/DavidHuie/gomigrate
+- https://github.com/rubenv/sql-migrate
+
+* Version dependencies
+
+* Version dependencies - options
+
+- [[gigo][https://github.com/LyricalSecurity/gigo]] - PIP-like dependency tool for golang, with support for private repositories and hashes.
+- [[glide][https://github.com/Masterminds/glide]] - Manage your golang vendor and vendored packages with ease. Inspired by tools like Maven, Bundler, and Pip.
+- [[godep][https://github.com/tools/godep]] - dependency tool for go, godep helps build packages reproducibly by fixing their dependencies.
+- [[gom][https://github.com/mattn/gom]] - Go Manager - bundle for go.
+- [[goop][https://github.com/nitrous-io/goop]] - A simple dependency manager for Go (golang), inspired by Bundler.
+- [[gopm][https://github.com/gpmgo/gopm]] - Go Package Manager
+
+* Version dependencies - options
+
+- [[govendor][https://github.com/kardianos/govendor]] - Go Package Manager. Go vendor tool that works with the standard vendor file.
+- [[gpm][https://github.com/pote/gpm]] - Barebones dependency manager for Go.
+- [[gvt][https://github.com/FiloSottile/gvt]] - `gvt` is a simple vendoring tool made for Go native vendoring (aka GO15VENDOREXPERIMENT), based on gb-vendor.
+- [[johnny-deps][https://github.com/VividCortex/johnny-deps]] - Minimal dependency version using Git
+- [[nut][https://github.com/jingweno/nut]] - Vendor Go dependencies
+- [[VenGO][https://github.com/DamnWidget/VenGO]] - create and manage exportable isolated go virtual environments
+
+* Version dependencies - how to
+
+Glide flow:
+
+    $ glide create                            # Start a new workspace
+    $ open glide.yaml                         # and edit away!
+    $ glide get github.com/Masterminds/cookoo # Get a package and add to glide.yaml
+    $ glide install                           # Install packages and dependencies
+
+    # work, work, work
+
+    $ go build                                # Go tools work normally
+    $ glide up                                # Update to newest versions of the package
+
+
+
+* Version dependencies - how it works
+
+    - $GOPATH/src/myProject (Your project)
+      |
+      |-- glide.yaml
+      |
+      |-- glide.lock
+      |
+      |-- main.go (Your main go code can live here)
+      |
+      |-- mySubpackage (You can create your own subpackages, too)
+      |    |
+      |    |-- foo.go
+      |
+      |-- vendor
+           |-- github.com
+                |
+                |-- Masterminds
+                      |
+                      |-- ... etc.
+
+* 2. Profiling
+
+* Profiling
+
+Add a way to profile your application in any time.
+
+Sometimes you have to switch something on to be able to profile your application during the normal production shift.
+
+* Profiling - how to
+
+.play pprof/main.go
+
+* Profiling - how to dump
+
+Memory profile
+
+    go tool pprof http://localhost:6061/debug/pprof/heap
+
+CPU profile
+
+    go tool pprof --seconds=10 http://localhost:6061/debug/pprof/profile
+
+Test
+
+[[http://localhost:6061/test][http://localhost:6061/test]]
+
+* Profiling - how to with external router
+
+.code pprof/gorilla.go /^func main/,/^}/
+
+.code pprof/gorilla.go /^func attachProfiler/,/^}/
+
+* 3. Health checks
+
+* Health checks
+
+Do I need health check ?
+
+* Health checks
+
+.image imgs/lb_architecture.png
+
+* Health checks
+
+Do I need health checks in following architecture?
+
+.image imgs/primitive_architecture.png
+
+* Healthz
+
+- It leverage health endpoint pattern.
+- Checks connection to the DB.
+- Prints much more information about the service health like:
+   - Build info
+   - Uptime
+   - Hostname
+   - Db connection status
+
+Inspiration:
+[[https://github.com/kelseyhightower/app-healthz][GitHub - app-healthz]]
+[[https://vimeo.com/173610242][Kelsey Hightower - healthz]]
+
+* Health checks - how to
+
+We could reuse pattern from Versioning Builds:
+
+    go build -ldflags "-X main.appVersion=$VERSION
+                       -X main.lastCommitTime=$LAST_COMMIT_TIME
+                       -X main.lastCommitHash=$LAST_COMMIT_HASH
+                       -X main.lastCommitUser=$LAST_COMMIT_USER
+                       -X main.buildTime=$(date -u +%Y-%m-%d_%H:%M:%S)" main.go
+
+and:
+
+    // Variables injected by LDFLAGS -X flag
+    var appVersion string = "unknown"
+    var lastCommitTime string = "unknown"
+    var lastCommitHash string = "unknown"
+    var lastCommitUser string = "unknown"
+    var buildTime string = "unknown"
+
+    // Globals used in healthz
+    var hostname string = "unknown"
+    var startedAt time.Time = time.Now().UTC()
+
+* Health checks - how to
+
+.play healthz/healthz.go /^func main/,/^}/
+
+* Health checks - how to
+
+.code healthz/healthz.go /^func healthz/,/^}/
+
+* Health checks - how to
+
+.code healthz/healthz.go /^func checkDbStatus/,/^}/
+
+* Health checks - Demo
+
+Run
+
+    run.sh
+
+Open
+
+[[http://localhost:9005/health][]]
+
+* 4. Logs
+
+* Logs in go
+
+- Use structured logger - choose one from the list: [[https://github.com/avelino/awesome-go#logging][Loggers list]]
+- Log context of invocation
+- Use log aggregators
+- Log with error level should force user (administrator, or direct user) intervention!
+
+* Logs - use structured logger
+
+.play logs/logrus.go
+
+* Logs - context
+
+.play logs/ugly.go /^func main/,/^}/
+
+.code logs/ugly.go /^func squareVal/,/^}/
+
+* Logs - context
+
+To test:
+
+- [[http://localhost:9000/square?arg=4][http://localhost:9000/square?arg=4]]
+- [[http://localhost:9000/square?arg=7][http://localhost:9000/square?arg=7]]
+
+How about:
+
+    hey -c 100 -n 1000 http://localhost:9000/square?arg=7
+
+* Logs - add context
+
+.code logs/nicer.go /^func main/,/^}/
+
+.code logs/nicer.go /^func squareHandler/,/^}/
+
+* Logs - add context
+
+.code logs/nicer.go /^func square/,/^}/
+
+* Logs - add context
+
+    const requestIdKey = 1
+    var logger zap.Logger
+
+    func init() {
+    	// a fallback/root logger for events without context
+    	logger = zap.New(
+    		zap.NewJSONEncoder(zap.RFC3339Formatter("key")),
+    		zap.Fields(zap.Int("pid", os.Getpid()),
+    			zap.String("exe", path.Base(os.Args[0]))),
+    	)
+    }
+
+.code logs/logsctx/ctx.go /^func WithRqId/,/^}/
+
+.code logs/logsctx/ctx.go /^func Logger/,/^}/
+
+* Logs - add context
+
+To test:
+
+- [[http://localhost:9001/square?arg=4][http://localhost:9001/square?arg=4]]
+- [[http://localhost:9001/square?arg=7][http://localhost:9001/square?arg=7]]
+
+How about:
+
+    hey -c 100 -n 1000 http://localhost:9001/square?arg=7
+
+* Log things in the frontend/mobile app
+
+- Add extra endpoint in the backend for logs from frontend - tricky and risky
+- Use Sentry or other similar tool
+
+* Use log aggregators
+
+In case where you would like to have more that 1 node or you don't know the flags for grep : )
+
+Improve security - hacker can clean up local files but can't remove logs which are already sent to the log aggregators.
+
+Options:
+
+- elasticsearch
+- splunk - if you're rich enough
+- greylog
+- loggly and many more
+
+* Use log aggregators - how to
+
+Run ELK stack
+
+    git clone https://github.com/deviantony/docker-elk
+
+    docker-compose up -d
+
+
+Open
+
+[[http://localhost:5601][http://localhost:5601]]
+
+* Use log aggregators - how to
+
+.play -edit logs/elk/elk.go
+
+* 5. Performance
+
+* Performance
+
+- Run performance tests at least once and save the results.
+- Run stability tests at least once.
+- Don't forget to run them on environment similar to production.
+- This isn't as much of time consuming as many think.
+
+Options:
+
+- [[http://gatling.io/][http://gatling.io/]]
+- [[http://jmeter.apache.org/][http://jmeter.apache.org/]]
+- [[https://github.com/tsenart/vegeta][https://github.com/tsenart/vegeta]]
+- [[https://github.com/rakyll/boom][https://github.com/rakyll/boom]] / [[https://github.com/rakyll/hey][https://github.com/rakyll/hey]]
+
+* Performance - report
+
+    hey -c 10 -n 1000 http://52.29.175.205:8080/api/health
+
+Result:
+
+    Summary:
+      Total:    4.1074 secs
+      Slowest:	0.2727 secs
+      Fastest:	0.0353 secs
+      Average:	0.0389 secs
+      Requests/sec:	243.4658
+
+    Status code distribution:
+      [200]	1000 responses
+
+    Response time histogram:
+      0.035 [1]	|
+      0.059 [969]	|∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎∎
+      0.083 [24]	|∎
+      0.107 [5]	|
+      0.130 [0]	|
+      0.154 [0]	|
+      0.178 [0]	|
+      0.202 [0]	|
+      0.225 [0]	|
+
+* 6. Monitoring and alarming
+
+* Monitoring and alarming
+
+- Monitoring should never require a human to interpret any part of the alerting domain
+- Three valid kinds of monitoring output
+    - Alerts: human needs to take action immediately
+    - Tickets: human needs to take action eventually
+    - Logging: no action needed
+
+- Eliminating toil: Carla Geisser: “If a human operator needs to touch your system during normal operations, you have a bug. The definition of normal changes as your systems grow.”
+    - If you have to ssh to your server to do some work - something is wrong
+    - Automate backups
+    - Automate logs rotating - send old ones to S3/equivalent
+
+* Monitoring - how to
+
+.code monitoring/librato.go /^func main/,/^}/
+
+* Monitoring - demo
+
+Run
+
+[[http://localhost:7001/test][http://localhost:7001/test]]
+
+Open
+
+[[https://metrics.librato.com/s/spaces/365188?duration=300][Librato dashboard]]
+
+* 7. Release process
+
+* Release process - release notes
+
+Create release notes
+
+- JIRA - [[https://confluence.atlassian.com/adminjiraserver071/creating-release-notes-802592502.html][How to get release notes from JIRA]]
+- GIT - git log v1.0..v1.2
+
+* Create release plan
+
+- When release the application (time, day)
+- What if something goes wrong? Revert?
+
+* Release process - Add release automation
+
+- Ansible/Puppet/Chef/Salt
+- Docker/Kubernetes/Swarm
+- Sometimes bash is good enough : )
+- Use process daemons - Does my app be up & running when node will be rebooted?
+    Use: systemd/supervisor/runit
+
+* Release process - no downtime(or minimize it)
+
+- Graceful shutdown - new feature in Golang 1.8
+- Canary deployments
+- Rollout deployments - kubernetes
+
