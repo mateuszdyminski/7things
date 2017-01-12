@@ -19,11 +19,11 @@ func main() {
 }
 
 func squareHandler(resp http.ResponseWriter, req *http.Request) {
-	rqCtx := logsctx.WithRqId(httpContext, uuid.NewRandom().String())
+	rqCtx := logsctx.WithRqId(httpContext, uuid.NewRandom().String()) // HL
 
 	arg := req.URL.Query().Get("arg")
 
-	result, err := square(rqCtx, arg)
+	result, err := squareValue(rqCtx, arg) // HL
 	if err != nil {
 		http.Error(resp, fmt.Sprintf("can't square value: %s! err: %v", arg, err), http.StatusBadRequest)
 		return
@@ -32,8 +32,8 @@ func squareHandler(resp http.ResponseWriter, req *http.Request) {
 	fmt.Fprint(resp, result)
 }
 
-func square(ctx context.Context, arg string) (float64, error) {
-	logger := logsctx.Logger(ctx)
+func squareValue(ctx context.Context, arg string) (float64, error) {
+	logger := logsctx.Logger(ctx) // HL
 
 	if arg == "" {
 		return 0, fmt.Errorf("arg should be set!")
@@ -43,10 +43,10 @@ func square(ctx context.Context, arg string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	logger.Info("got arg", zap.String("val", arg))
+	logger.Info("got arg", zap.String("val", arg)) // HL
 
 	result := math.Pow(val, 2)
-	logger.Info("finished", zap.Float64("result", result))
+	logger.Info("finished", zap.Float64("result", result)) // HL
 
 	return result, nil
 }

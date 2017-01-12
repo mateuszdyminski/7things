@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"strings"
-	"strconv"
 	"github.com/gorilla/mux"
 	"fmt"
 )
@@ -25,34 +24,29 @@ func main() {
 	http.ListenAndServe(":8081", router)
 }
 
+// START
 var accept2ver = map[string]int{
 	"vnd.testapp.v1": RestAPIv1,
 	"vnd.testapp.v2": RestAPIv2,
 }
 
-// AcceptedVersion checks Accept header in request to parse API version.
 func AcceptedVersion(req *http.Request) int {
-	a := strings.Split(req.Header.Get("Accept"), "/")
+	a := strings.Split(req.Header.Get("Accept"), "/") // HL
 	var v string
 	if len(a) > 1 {
-		versionAndType := strings.Split(a[1], "+")
-
-		v = versionAndType[0]
-		if len(versionAndType) > 1 {
-			req.Header.Set("X-Version", strconv.Itoa(accept2ver[v]))
-			req.Header.Set("X-Content", versionAndType[1])
-		}
+		versionAndType := strings.Split(a[1], "+") // HL
+		v = versionAndType[0] // HL
 	}
 
-	version := accept2ver[v]
+	version := accept2ver[v] // HL
 	if version < 1 {
 		return DefaultAPIVersion
 	}
 
 	return version
 }
+// STOP
 
-// Ver - middleware to get version of request.
 func Ver(endpointHandler func(http.ResponseWriter, *http.Request, int)) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		endpointHandler(res, req, AcceptedVersion(req)) // HL
@@ -60,7 +54,7 @@ func Ver(endpointHandler func(http.ResponseWriter, *http.Request, int)) http.Han
 }
 
 func testHandler(resp http.ResponseWriter, req *http.Request, v int) {
-	if v == RestAPIv2 {
+	if v == RestAPIv2 { // HL
 		fmt.Fprint(resp, "Api V2")
 	} else {
 		fmt.Fprint(resp, "Api V1")

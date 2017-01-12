@@ -64,13 +64,13 @@ Always store build results.
 
 https://github.com/aktau/github-release
 
-    # upload a file, for example the OSX/AMD64 binary of my gofinance app
+    # upload a file, for example the OSX binary
     $ github-release upload \
-        --user aktau \
-        --repo gofinance \
+        --user mateuszdyminski \
+        --repo 7things \
         --tag v0.1.0 \
-        --name "gofinance-osx-amd64" \
-        --file bin/darwin/amd64/gofinance
+        --name "myapp" \
+        --file bin/darwin/myapp
 
 * Version API
 
@@ -80,7 +80,7 @@ Two common approach:
 
 - http://company.com/api/v3/users
     GET v3.0/users HTTP/1.1
-    Accept: application/xml
+    Accept: application/json
 
 or:
 
@@ -92,11 +92,11 @@ or:
 
 - http://company.com/api/v3/users
     GET v3.0/users HTTP/1.1
-    Accept: application/xml
+    Accept: application/json
 
 Code:
 
-.code versioning/api/subrouters.go /^func main/,/^}/
+.play versioning/api/subrouters.go /^func main/,/^}/
 
 * Version API - subrouters - how to
 
@@ -121,13 +121,13 @@ Test:
 
 Code:
 
-.code versioning/api/headers.go /^func main/,/^}/
+.play versioning/api/headers.go /^func main/,/^}/
 
 .code versioning/api/headers.go /^func Ver/,/^}/
 
 * Version API - headers - how to
 
-.code versioning/api/headers.go /^func AcceptedVersion/,/^}/
+.code versioning/api/headers.go /START/,/STOP/
 
 * Version API - headers - how to
 
@@ -157,11 +157,13 @@ Code:
 
 .code versioning/files/statics.go
 
+* Version Static files - how to
+
 Test:
 
-    curl http://localhost:8082/s/1.0/index.html
+[[http://localhost:8082/s/1.0/index.html][http://localhost:8082/s/1.0/index.html]]
 
-    curl http://localhost:8082/s/index.html
+[[http://localhost:8082/s/index.html][http://localhost:8082/s/index.html]]
 
 * Version DB schema
 
@@ -171,6 +173,7 @@ Test:
 - Reversible - rollbacks
 
 Options:
+
 - Flyway
 - Liquibase
 - Custom solution
@@ -178,11 +181,12 @@ Options:
 * Version DB schema - go tools
 
 Options:
-- https://github.com/mattes/migrate
-- https://github.com/tanel/dbmigrate
-- https://github.com/BurntSushi/migration
-- https://github.com/DavidHuie/gomigrate
-- https://github.com/rubenv/sql-migrate
+
+- [[https://github.com/mattes/migrate][https://github.com/mattes/migrate]]
+- [[https://github.com/tanel/dbmigrate][https://github.com/tanel/dbmigrate]]
+- [[https://github.com/BurntSushi/migration][https://github.com/BurntSushi/migration]]
+- [[https://github.com/DavidHuie/gomigrate][https://github.com/DavidHuie/gomigrate]]
+- [[https://github.com/rubenv/sql-migrate][https://github.com/rubenv/sql-migrate]]
 
 * Version dependencies
 
@@ -386,7 +390,7 @@ How about:
 
 * Logs - add context
 
-.code logs/nicer.go /^func square/,/^}/
+.code logs/nicer.go /^func squareValue/,/^}/
 
 * Logs - add context
 
@@ -518,11 +522,19 @@ Result:
 
 Run
 
-[[http://localhost:7001/test][http://localhost:7001/test]]
+[[http://localhost:7001/error][http://localhost:7001/error]]
 
 Open
 
 [[https://metrics.librato.com/s/spaces/365188?duration=300][Librato dashboard]]
+
+* Monitoring - alarms demo
+
+Open
+
+[[https://metrics.librato.com/alerts#/index][Librato alerts dashboard]]
+
+* 7. Release process
 
 * 7. Release process
 

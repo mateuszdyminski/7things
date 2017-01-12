@@ -28,13 +28,13 @@ func main() {
 		[]float64{0.5, 0.85, 0.95, 0.99}, time.Millisecond,
 	)
 	// create custom counter
-	requests := metrics.NewCounter() // HL
-	metrics.Register("app.http.ok", requests) // HL
+	errors := metrics.NewCounter() // HL
+	metrics.Register("app.http.error", errors) // HL
 
 	// configure http server
-	http.HandleFunc("/test", func(w http.ResponseWriter, req *http.Request) {
-		requests.Inc(1) // HL
-		fmt.Fprint(w, "Request +1!")
+	http.HandleFunc("/error", func(w http.ResponseWriter, req *http.Request) {
+		errors.Inc(1) // HL
+		fmt.Fprint(w, "Error +1!")
 	})
 	http.ListenAndServe(":7001", nil)
 }
